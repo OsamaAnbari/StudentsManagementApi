@@ -8,6 +8,7 @@ using System.Text;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Students_Management_Api.Services;
 using Students_Management_Api.Models;
+using Microsoft.Extensions.Logging.Console;
 
 namespace Students_Management_Api.Controllers
 {
@@ -16,35 +17,26 @@ namespace Students_Management_Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly LibraryContext _context;
+        IConfiguration _configuration;
+        ILogger _logger;
 
-        public AuthController(LibraryContext context)
+        public AuthController(LibraryContext context, IConfiguration configuration, ILogger<AuthController> logger)
         {
             _context = context;
+            _configuration = configuration;
+            _logger = logger;
         }
 
         [Route("user")]
         [HttpPost()]
         public async Task<IActionResult> UserLogin(Login model)
         {
-            AuthService userService = new AuthService();
-            User auth = await userService.Login(model, _context);
+            AuthService userService = new AuthService(_configuration);
+            string token = await userService.Login(model, _context);
 
-            if (auth != null)
+            if (token != null)
             {
-                int id=0;
-                switch (auth.Role)
-                {
-                    case 1:
-                        id = _context.Supervisor.First(u => u.UserId == auth.Id).Id;
-                        break;
-                    case 2:
-                        id = _context.Teacher.First(u => u.UserId == auth.Id).Id;
-                        break;
-                    case 3:
-                        id = _context.Student.First(u => u.UserId == auth.Id).Id;
-                        break;
-                }
-                var token = GenerateJwtToken(auth.Role, id);
+                _logger.LogInformation(1015, "User Logged In");
                 return Ok(new { token });
             }
             return BadRequest(new { message = "Username or Password is wrong"});
@@ -54,31 +46,15 @@ namespace Students_Management_Api.Controllers
         [HttpPost()]
         public async Task<IActionResult> AdminLogin(Login model)
         {
-
             if (model.Username == "osama" && model.Password == "123123")
             {
-                var token = GenerateJwtToken(0, 0);
+                AuthService userService = new AuthService(_configuration);
+                var token = userService.GenerateJwtToken(0, 0);
+                
+                _logger.LogInformation("Admin Logged In");
                 return Ok(new { token });
             }
             return BadRequest(new { message = "Username or Password is wrong" });
-        }
-
-        private string GenerateJwtToken(int role, int id)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes("7fb4895dcd29473f09bd3b9d1499246456dd1eda25daf3f66fd4c5bf990e257418e4d3");
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new Claim[]
-                {
-                    new Claim(ClaimTypes.Role, role.ToString()),
-                    new Claim("userId", id.ToString())
-                }),
-                Expires = DateTime.UtcNow.AddHours(1), // Token expiration time
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
-            };
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
         }
     }
 }

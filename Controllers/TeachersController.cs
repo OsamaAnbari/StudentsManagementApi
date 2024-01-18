@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -8,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Students_Management_Api;
 using Students_Management_Api.Models;
+using Microsoft.AspNetCore.JsonPatch;
 
 namespace Students_Management_Api.Controllers
 {
@@ -62,7 +64,14 @@ namespace Students_Management_Api.Controllers
                 return BadRequest();
             }
 
-            _context.Entry(teacher).State = EntityState.Modified;
+            _context.Teacher.Attach(teacher);
+            _context.Entry(teacher).Property(x => x.Firstname).IsModified = true;
+            _context.Entry(teacher).Property(x => x.Surname).IsModified = true;
+            _context.Entry(teacher).Property(x => x.Phone).IsModified = true;
+            _context.Entry(teacher).Property(x => x.Tc).IsModified = true;
+            _context.Entry(teacher).Property(x => x.Study).IsModified = true;
+
+            //_context.Entry(teacher).State = EntityState.Modified;
 
             try
             {
@@ -80,7 +89,7 @@ namespace Students_Management_Api.Controllers
                 }
             }
 
-            return NoContent();
+            return Ok(teacher);
         }
 
         // POST: api/Teachers
@@ -101,8 +110,8 @@ namespace Students_Management_Api.Controllers
 
             teacher.User = user;
 
-            _context.User.Add(user);
-            _context.Teacher.Add(teacher);
+            //_context.User.Add(user);
+            _context.Add(teacher);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetTeacher", new { id = teacher.Id }, teacher);

@@ -1,24 +1,23 @@
 using Students_Management_Api;
-using Students_Management_Api.Controllers;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Runtime.ConstrainedExecution;
 using System.Text;
-using System.Configuration;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.DataProtection.KeyManagement;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Students_Management_Api.Middlewares;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
+using Students_Management_Api.Models;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(option =>
+var services = builder.Services;
+var configuration = builder.Configuration;
+
+
+services.AddEndpointsApiExplorer();
+services.AddSwaggerGen(option =>
 {
     option.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -45,11 +44,10 @@ builder.Services.AddSwaggerGen(option =>
     });
 });
 
-// Add services to the container.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 
-var key = Encoding.ASCII.GetBytes("7fb4895dcd29473f09bd3b9d1499246456dd1eda25daf3f66fd4c5bf990e257418e4d3");
-
-builder.Services.AddAuthentication(options =>
+services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -61,32 +59,31 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["key"])),
         ValidateIssuer = false,
         ValidateAudience = false
     };
 });
 
-builder.Services.AddControllers();
-builder.Services.AddControllers()
-        .AddJsonOptions(options =>
-        {
-            options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
-        });
-builder.Services.AddDbContext<LibraryContext>(x => x.UseMySQL("Server=host.docker.internal;database=library;user=root;password=asdrasdr1"));
+services.AddIdentity<AuthUser, Role>()
+        .AddEntityFrameworkStores<LibraryContext>();
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    });
+
+services.AddDbContext<LibraryContext>(x => x.UseMySQL(configuration["ConnectionStrings:sql"]));
+services.AddStackExchangeRedisCache(options => { options.Configuration = configuration["RedisCacheUrl"]; });
+
+
+// Configure the HTTP request pipeline.
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (true)
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseHttpsRedirection();
 

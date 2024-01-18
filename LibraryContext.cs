@@ -4,10 +4,11 @@ using MySql.EntityFrameworkCore.Extensions;
 using System.Collections.Generic;
 using System.Reflection.Emit;
 using Students_Management_Api.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace Students_Management_Api
 {
-    public class LibraryContext : DbContext
+    public class LibraryContext : IdentityDbContext<AuthUser>
     {
         public LibraryContext(DbContextOptions<LibraryContext> options)
         : base(options)
@@ -26,10 +27,6 @@ namespace Students_Management_Api
         public DbSet<ClassStudent> ClassStudent { get; set; }
         public DbSet<StudentTeacherMessage> StudentTeacherMessage { get; set; }
 
-        /*protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseMySQL("server=localhost;database=library;user=root;password=asdrasdr1");
-        }*/
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -141,6 +138,6 @@ namespace Students_Management_Api
             /*modelBuilder.Entity<LectureStudent>()
             .HasIndex(e => e.StudentsId)
             .IsUnique();*/
-        }
     }
+}
 }

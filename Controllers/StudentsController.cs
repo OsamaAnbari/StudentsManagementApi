@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using NuGet.DependencyResolver;
 using Students_Management_Api;
 using Students_Management_Api.Models;
 
@@ -62,9 +63,15 @@ namespace Students_Management_Api.Controllers
                 return BadRequest();
             }
 
-            student.UserId =  _context.Student.Find(id).UserId;
-
-            _context.Entry(student).State = EntityState.Modified;
+            _context.Student.Attach(student);
+            _context.Entry(student).Property(x => x.Firstname).IsModified = true;
+            _context.Entry(student).Property(x => x.Surname).IsModified = true;
+            _context.Entry(student).Property(x => x.Phone).IsModified = true;
+            _context.Entry(student).Property(x => x.Tc).IsModified = true;
+            _context.Entry(student).Property(x => x.Faculty).IsModified = true;
+            _context.Entry(student).Property(x => x.Department).IsModified = true;
+            _context.Entry(student).Property(x => x.Year).IsModified = true;
+            _context.Entry(student).Property(x => x.birth).IsModified = true;
 
             try
             {
