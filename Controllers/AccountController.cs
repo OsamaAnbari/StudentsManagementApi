@@ -11,42 +11,83 @@ namespace Students_Management_Api.Controllers
     [ApiController]
     public class AccountController : ControllerBase
     {
-        private readonly UserManager<AuthUser> _userManager;
-        private readonly SignInManager<AuthUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IConfiguration _configuration;
         private readonly ILogger<AccountController> _logger;
 
-        public AccountController(UserManager<AuthUser> userManager, SignInManager<AuthUser> signInManager, IConfiguration configuraion, ILogger<AccountController> logger)
+        public AccountController(
+            UserManager<ApplicationUser> userManager, 
+            SignInManager<ApplicationUser> signInManager, 
+            IConfiguration configuraion, 
+            ILogger<AccountController> logger,
+            RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _configuration = configuraion;
             _logger = logger;
+            _roleManager = roleManager;
         }
 
         [AllowAnonymous]
         [HttpPost("login")]
         //[ValidateAntiForgeryToken]
-        public async Task<IActionResult> Login(Login model)
+        public async Task<IActionResult> Login(LoginViewModel model)
         {
-            if (ModelState.IsValid)
+            var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
+
+            if (result.Succeeded)
             {
-                var result = await _signInManager.PasswordSignInAsync(model.Username, model.Password, model.RememberMe, lockoutOnFailure: false);
+                //var userId = _userManager.GetUserId(User);
+                var user = await _userManager.FindByNameAsync(model.Username);
+                var roles = await _userManager.GetRolesAsync(user);
 
-                if (result.Succeeded)
-                {
-                    AuthService userService = new AuthService(_configuration);
-                    var token = userService.GenerateJwtToken(0, 0);
+                AuthService userService = new AuthService(_configuration);
+                var token = userService.GenerateJwtToken(roles.FirstOrDefault(), user.Id);
 
-                    _logger.LogInformation("Admin Logged In");
-                    return Ok(new { token });
-                }
-
-                ModelState.AddModelError(string.Empty, "Invalid login attempt.");
-                return BadRequest(new { message = "Username or Password is wrong" });
+                _logger.LogInformation("Admin Logged In");
+                return Ok(new { token });
             }
 
-            return BadRequest(new { message = "Username or Password is wrong" });;
+            return BadRequest(new { error = "Invalid login attempt." });
+        }
+
+        [AllowAnonymous]
+        [HttpPost("registration")]
+        //[ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register(RegisterViewModel model)
+        {
+            var roleExists = await _roleManager.RoleExistsAsync(model.Role);
+            if (!roleExists)
+            {
+                return BadRequest($"Role '{model.Role}' does not exist");
+            }
+
+            var user = new ApplicationUser() { UserName = model.UserName, Email = model.Email };
+            var result = await _userManager.CreateAsync(user, model.Password);
+
+            if (result.Succeeded)
+            {
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, model.Role);
+
+                if (addToRoleResult.Succeeded)
+                {
+                    return Ok($"User '{model.UserName}' created successfully and assigned to the role '{model.Role}'");
+                }
+                else
+                {
+                    // If adding to role fails, delete the user to maintain consistency
+                    await _userManager.DeleteAsync(user);
+                    return BadRequest($"Failed to assign the user to the role: {string.Join(", ", addToRoleResult.Errors)}");
+                }
+
+                await _signInManager.SignInAsync(user, isPersistent: false);
+                return Ok();
+            }
+
+            return BadRequest(result.Errors);
         }
     }
 }

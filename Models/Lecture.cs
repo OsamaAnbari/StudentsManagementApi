@@ -8,21 +8,25 @@ namespace Students_Management_Api.Models
         public int Id { get; set; }
         public string? Title { get; set; }
         public DateTime Date { get; set; }
+        [ForeignKey("Teacher")]
         public int? TeacherID { get; set; }
-        [JsonIgnore]
         public virtual Teacher? Teacher { get; set; }
-        [JsonIgnore]
         public List<Student>? Students { get; set; } = new List<Student>();
-        [NotMapped]
-        [JsonIgnore]
+    }
+    public class LectureViewModel
+    {
+        public string? Title { get; set; }
+        public DateTime Date { get; set; }
+        public int? TeacherID { get; set; }
         public List<int> StudentIds { get; set; } = new List<int>();
-        
+
     }
     public class LectureStudent
     {
-        //public int Id { get; set; }
+        [ForeignKey("Student")]
         public int StudentsId { get; set; }
         public Student Student { get; set; }
+        [ForeignKey("Teacher")]
         public int LecturesId { get; set; }
         public Lecture Lecture { get; set; }
     }

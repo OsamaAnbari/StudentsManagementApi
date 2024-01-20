@@ -5,17 +5,18 @@ using System.Collections.Generic;
 using System.Reflection.Emit;
 using Students_Management_Api.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace Students_Management_Api
 {
-    public class LibraryContext : IdentityDbContext<AuthUser>
+    public class LibraryContext : IdentityDbContext<ApplicationUser>
     {
         public LibraryContext(DbContextOptions<LibraryContext> options)
         : base(options)
         {
         }
 
-        public DbSet<User> User { get; set; }
+        //public DbSet<User> User { get; set; }
         public DbSet<Teacher> Teacher { get; set; }
         public DbSet<Supervisor> Supervisor { get; set; }
         public DbSet<Student> Student { get; set; }
@@ -32,14 +33,6 @@ namespace Students_Management_Api
         {
             base.OnModelCreating(modelBuilder);
 
-            modelBuilder.Entity<User>(entity =>
-            {
-                entity.HasKey(entity => entity.Id);
-                entity.Property(entity => entity.Username);
-                entity.Property(entity => entity.Password);
-                entity.Property(entity => entity.Role);
-            });
-
             modelBuilder.Entity<Teacher>(entity =>
             {
                 entity.HasKey(entity => entity.Id);
@@ -48,12 +41,7 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Phone);
                 entity.Property(entity => entity.Tc);
                 entity.Property(entity => entity.Study);
-                entity.HasOne(e => e.User).WithOne().HasForeignKey<Teacher>(e => e.UserId);
-                entity.HasMany(e => e.Classes).WithOne(e => e.Teacher);
-                entity.HasMany(e => e.Lectures).WithOne(e => e.Teacher);
-                entity.HasMany(e => e.Received).WithOne(e => e.Receiver);
-                entity.HasMany(e => e.Sents).WithOne(e => e.Sender);
-                //entity.Navigation(e => e.Lectures);
+                entity.HasOne(e => e.ApplicationUser).WithOne().HasForeignKey<Teacher>(e => e.UserId);
             });
 
             modelBuilder.Entity<Supervisor>(entity =>
@@ -63,7 +51,7 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Surname);
                 entity.Property(entity => entity.Phone);
                 entity.Property(entity => entity.Tc);
-                entity.HasOne(e => e.User).WithOne().HasForeignKey<Supervisor>(e => e.UserId);
+                entity.HasOne(e => e.ApplicationUser).WithOne().HasForeignKey<Supervisor>(e => e.UserId);
             });
 
             modelBuilder.Entity<Student>(entity =>
@@ -76,20 +64,7 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Faculty).IsRequired(false);
                 entity.Property(entity => entity.Department).IsRequired(false);
                 entity.Property(entity => entity.Year).IsRequired(false);
-                entity.HasOne(e => e.User).WithOne().HasForeignKey<Student>(e => e.UserId);
-
-                entity.HasMany(e => e.Classes).WithMany(e => e.Students)
-                      .UsingEntity<ClassStudent>(
-                      l => l.HasOne(e => e.Class).WithMany().HasForeignKey(e => e.ClassesId),
-                      r => r.HasOne(e => e.Student).WithMany().HasForeignKey(e => e.StudentsId));
-
-                entity.HasMany(e => e.Lectures).WithMany(e => e.Students)
-                      .UsingEntity<LectureStudent>(
-                      l => l.HasOne(e => e.Lecture).WithMany().HasForeignKey(e => e.LecturesId),
-                      r => r.HasOne(e => e.Student).WithMany().HasForeignKey(e => e.StudentsId));
-
-                entity.HasMany(e => e.Received).WithMany(e => e.Receivers);
-                entity.HasMany(e => e.Sents).WithOne(e => e.Sender);
+                entity.HasOne(e => e.ApplicationUser).WithOne().HasForeignKey<Student>(e => e.UserId);
             });
 
             modelBuilder.Entity<Lecture>(entity =>
@@ -98,8 +73,10 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Title);
                 entity.Property(entity => entity.Date);
                 entity.HasOne(e => e.Teacher).WithMany(e => e.Lectures).HasForeignKey(e => e.TeacherID);
-                entity.HasMany(e => e.Students).WithMany(e => e.Lectures);
-                //entity.Navigation(e => e.Students);
+                entity.HasMany(e => e.Students).WithMany(e => e.Lectures)
+                      .UsingEntity<LectureStudent>(
+                    l => l.HasOne(e => e.Student).WithMany().HasForeignKey(e => e.StudentsId),
+                    r => r.HasOne(e => e.Lecture).WithMany().HasForeignKey(e => e.LecturesId));
             });
 
             modelBuilder.Entity<Class>(entity =>
@@ -107,7 +84,10 @@ namespace Students_Management_Api
                 entity.HasKey(entity => entity.Id);
                 entity.Property(entity => entity.Time);
                 entity.HasOne(e => e.Teacher).WithMany(e => e.Classes);
-                entity.HasMany(e => e.Students).WithMany(e => e.Classes);
+                entity.HasMany(e => e.Students).WithMany(e => e.Classes)
+                      .UsingEntity<ClassStudent>(
+                      l => l.HasOne(e => e.Student).WithMany().HasForeignKey(e => e.StudentsId),
+                      r => r.HasOne(e => e.Class).WithMany().HasForeignKey(e => e.ClassesId));
             });
 
             modelBuilder.Entity<StudentMessages>(entity =>
@@ -131,13 +111,13 @@ namespace Students_Management_Api
                 entity.HasOne(e => e.Sender).WithMany(e => e.Sents);
                 entity.HasMany(e => e.Receivers).WithMany(e => e.Received)
                       .UsingEntity<StudentTeacherMessage>(
-                      l => l.HasOne(e => e.Receivers).WithMany().HasForeignKey(e => e.ReceiversId),
+                      l => l.HasOne(e => e.Receiver).WithMany().HasForeignKey(e => e.ReceiverId),
                       r => r.HasOne(e => e.Received).WithMany().HasForeignKey(e => e.ReceivedId));
             });
 
             /*modelBuilder.Entity<LectureStudent>()
             .HasIndex(e => e.StudentsId)
             .IsUnique();*/
+        }
     }
-}
 }

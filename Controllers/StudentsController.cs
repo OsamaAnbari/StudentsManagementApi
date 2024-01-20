@@ -4,24 +4,31 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NuGet.DependencyResolver;
+using NuGet.Protocol.Plugins;
 using Students_Management_Api;
 using Students_Management_Api.Models;
 
 namespace Students_Management_Api.Controllers
 {
-    [Authorize(Roles = "1")]
+    //[Authorize(Roles = "1")]
     [Route("api/[controller]")]
     [ApiController]
     public class StudentsController : ControllerBase
     {
         private readonly LibraryContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public StudentsController(LibraryContext context)
+        public StudentsController(
+            LibraryContext context, 
+            UserManager<ApplicationUser> userManager
+            )
         {
             _context = context;
+            _userManager = userManager;
         }
 
         // GET: api/Students
@@ -56,22 +63,20 @@ namespace Students_Management_Api.Controllers
         // PUT: api/Students/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutStudent(int id, Student student)
+        public async Task<IActionResult> PutStudent(int id, StudentViewModel model)
         {
-            if (id != student.Id)
-            {
-                return BadRequest();
-            }
 
+            var student = await _context.Student.FindAsync(id);
             _context.Student.Attach(student);
-            _context.Entry(student).Property(x => x.Firstname).IsModified = true;
+            _context.Entry(student).CurrentValues.SetValues(model);
+            /*_context.Entry(student).Property(x => x.Firstname).IsModified = true;
             _context.Entry(student).Property(x => x.Surname).IsModified = true;
             _context.Entry(student).Property(x => x.Phone).IsModified = true;
             _context.Entry(student).Property(x => x.Tc).IsModified = true;
             _context.Entry(student).Property(x => x.Faculty).IsModified = true;
             _context.Entry(student).Property(x => x.Department).IsModified = true;
             _context.Entry(student).Property(x => x.Year).IsModified = true;
-            _context.Entry(student).Property(x => x.birth).IsModified = true;
+            _context.Entry(student).Property(x => x.birth).IsModified = true;*/
 
             try
             {
@@ -95,26 +100,46 @@ namespace Students_Management_Api.Controllers
         // POST: api/Students
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Student>> PostStudent(Student student)
+        public async Task<ActionResult<Student>> PostStudent(StudentViewModel model)
         {
-          if (_context.Student == null)
-          {
-              return Problem("Entity set 'LibraryContext.Student'  is null.");
-          }
-            User user = new User
+            if (_context.Student == null)
             {
-                Username = student.Tc,
-                Password = BCrypt.Net.BCrypt.HashPassword(student.Tc, workFactor: 10),
-                Role = 3
-            };
+                return Problem("Entity set 'LibraryContext.Student'  is null.");
+            }
+            var user = new ApplicationUser() { UserName = model.Tc, Email = model.Email };
+            var result = await _userManager.CreateAsync(user, $"Aa.{model.Tc}");
 
-            student.User = user;
+            if (result.Succeeded)
+            {
+                var addToRoleResult = await _userManager.AddToRoleAsync(user, "Student");
 
-            _context.User.Add(user);
-            _context.Student.Add(student);
-            await _context.SaveChangesAsync();
+                if (addToRoleResult.Succeeded)
+                {
+                    var student = new Student()
+                    {
+                        UserId = user.Id,
+                        Firstname = model.Firstname,
+                        Surname = model.Surname,
+                        birth = model.birth,
+                        Phone = model.Phone,
+                        Tc = model.Tc,
+                        Faculty = model.Faculty,
+                        Department = model.Department,
+                        Year = model.Year
+                    };
 
-            return CreatedAtAction("GetStudent", new { id = student.Id }, student);
+                    _context.Student.Add(student);
+                    await _context.SaveChangesAsync();
+
+                    return Ok($"User '{model.Tc}' created successfully and assigned to the role 'Student'");
+                }
+                else
+                {
+                    await _userManager.DeleteAsync(user);
+                    return BadRequest($"Failed to assign the user to the role: {string.Join(", ", addToRoleResult.Errors)}");
+                }
+            }
+            return BadRequest(result.Errors);
         }
 
         // DELETE: api/Students/5
@@ -131,14 +156,14 @@ namespace Students_Management_Api.Controllers
                 return NotFound();
             }
 
-            var user = await _context.User.FindAsync(student.UserId);
+            var user = await _userManager.FindByIdAsync(student.UserId);
             if (user == null)
             {
                 return NotFound("User is not found");
             }
 
             _context.Student.Remove(student);
-            _context.User.Remove(user);
+            await _userManager.DeleteAsync(user);
 
             await _context.SaveChangesAsync();
 

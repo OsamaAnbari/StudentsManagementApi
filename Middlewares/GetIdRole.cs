@@ -13,7 +13,7 @@ namespace Students_Management_Api.Middlewares
 
         public async Task Invoke(HttpContext context)
         {
-            var NameClaim1 = context.User.FindFirst("userId");
+            var NameClaim1 = context.User.FindFirst(ClaimTypes.NameIdentifier);
             var NameClaim2 = context.User.FindFirst(ClaimTypes.Role);
             
             if (NameClaim1 != null)

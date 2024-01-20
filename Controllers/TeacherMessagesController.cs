@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +12,6 @@ using Students_Management_Api.Models;
 
 namespace Students_Management_Api.Controllers
 {
-    [Authorize(Roles = "2")]
     [Route("api/[controller]")]
     [ApiController]
     public class TeacherMessagesController : ControllerBase
@@ -23,77 +23,34 @@ namespace Students_Management_Api.Controllers
             _context = context;
         }
 
-        // GET: api/TeacherMessages
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<TeacherMessage>>> GetTeacherMessage()
-        {
-          if (_context.TeacherMessage == null)
-          {
-              return NotFound();
-          }
-            return await _context.TeacherMessage.ToListAsync();
-        }
-
-        // GET: api/TeacherMessages/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<TeacherMessage>> GetTeacherMessage(int id)
-        {
-          if (_context.TeacherMessage == null)
-          {
-              return NotFound();
-          }
-            var teacherMessage = await _context.TeacherMessage.FindAsync(id);
-
-            if (teacherMessage == null)
-            {
-                return NotFound();
-            }
-
-            return teacherMessage;
-        }
-
-        // PUT: api/TeacherMessages/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        /*[HttpPut("{id}")]
-        public async Task<IActionResult> PutTeacherMessage(int id, TeacherMessage teacherMessage)
-        {
-            if (id != teacherMessage.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(teacherMessage).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!TeacherMessageExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }*/
-
         // POST: api/TeacherMessages
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<TeacherMessage>> PostTeacherMessage(TeacherMessage teacherMessage)
+        public async Task<ActionResult<TeacherMessage>> PostTeacherMessage(TeacherMessageViewModel model)
         {
-          if (_context.TeacherMessage == null)
-          {
-              return Problem("Entity set 'LibraryContext.TeacherMessage'  is null.");
-          }
+            if (_context.TeacherMessage == null)
+            {
+                return Problem("Entity set 'LibraryContext.TeacherMessage'  is null.");
+            }
 
-            foreach (var studentId in teacherMessage.ReceiverIds)
+            //string userId = HttpContext.Items["userId"]?.ToString();
+            string userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            int teacherId = _context.Teacher.FirstOrDefault(e => e.UserId == userId).Id;
+            if (!TeacherExists(teacherId))
+            {
+                return BadRequest(new { error = "Teacher is not found" });
+            }
+
+            var teacherMessage = new TeacherMessage()
+            {
+                SenderId = teacherId,
+                Subject = model.Subject,
+                Status = model.Status,
+                Date = model.Date,
+                Body = model.Body
+            };
+
+            foreach (var studentId in model.ReceiverIds)
             {
                 if (StudentExists(studentId))
                 {
@@ -101,7 +58,7 @@ namespace Students_Management_Api.Controllers
                     new StudentTeacherMessage()
                     {
                         Received = teacherMessage,
-                        ReceiversId = studentId
+                        ReceiverId = studentId
                     });
                 }
             }
@@ -109,7 +66,7 @@ namespace Students_Management_Api.Controllers
             _context.TeacherMessage.Add(teacherMessage);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetTeacherMessage", new { id = teacherMessage.Id }, teacherMessage);
+            return Ok(new { id = teacherMessage.Id, teacherMessage });
         }
 
         // DELETE: api/TeacherMessages/5
@@ -139,6 +96,10 @@ namespace Students_Management_Api.Controllers
         private bool StudentExists(int id)
         {
             return (_context.Student?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+        private bool TeacherExists(int id)
+        {
+            return (_context.Teacher?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

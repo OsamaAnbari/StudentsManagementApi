@@ -16,43 +16,37 @@ namespace Students_Management_Api.Services
             _configuration = configuration;
         }
 
-        public async Task<string> Login(Login model, LibraryContext context)
+        public async Task<string> Login(string role, string UserId, LibraryContext context)
         {
-            User user = context.User.First(u => u.Username == model.Username);
-
-            if (user != null)
+            if (UserId != null)
             {
-                if (BCrypt.Net.BCrypt.Verify(model.Password, user.Password))
+                int id = 0;
+                switch (role)
                 {
-                    int id = 0;
-                    switch (user.Role)
-                    {
-                        case 1:
-                            id = context.Supervisor.First(u => u.UserId == user.Id).Id;
-                            break;
-                        case 2:
-                            id = context.Teacher.First(u => u.UserId == user.Id).Id;
-                            break;
-                        case 3:
-                            id = context.Student.First(u => u.UserId == user.Id).Id;
-                            break;
-                    }
-                    return GenerateJwtToken(user.Role, id);
+                    case "Supervisor":
+                        id = context.Supervisor.First(u => u.UserId == UserId).Id;
+                        break;
+                    case "Teacher":
+                        id = context.Teacher.First(u => u.UserId == UserId).Id;
+                        break;
+                    case "Student":
+                        id = context.Student.First(u => u.UserId == UserId).Id;
+                        break;
                 }
-                return null;
+                return GenerateJwtToken(role, id.ToString());
             }
             return null;
         }
 
-        public string GenerateJwtToken(int role, int id)
+        public string GenerateJwtToken(string role, string id)
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Role, role.ToString()),
-                new Claim("userId", id.ToString())
+                new Claim(ClaimTypes.Role, role),
+                new Claim(ClaimTypes.NameIdentifier, id)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(_configuration["key"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(

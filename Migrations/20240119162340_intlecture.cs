@@ -5,13 +5,12 @@
 namespace Students_Management_Api.Migrations
 {
     /// <inheritdoc />
-    public partial class nonavigation : Migration
+    public partial class intlecture : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-        name: "lecturestudent");
+
         }
 
         /// <inheritdoc />

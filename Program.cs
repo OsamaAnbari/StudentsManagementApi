@@ -8,6 +8,8 @@ using Students_Management_Api.Middlewares;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using Students_Management_Api.Models;
+using Microsoft.AspNetCore.Identity;
+using System.Security.Claims;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -64,9 +66,7 @@ services.AddAuthentication(options =>
         ValidateAudience = false
     };
 });
-
-services.AddIdentity<AuthUser, Role>()
-        .AddEntityFrameworkStores<LibraryContext>();
+services.AddAuthorization();
 
 services.AddControllers()
     .AddJsonOptions(options =>
@@ -75,6 +75,16 @@ services.AddControllers()
     });
 
 services.AddDbContext<LibraryContext>(x => x.UseMySQL(configuration["ConnectionStrings:sql"]));
+services.AddIdentity<ApplicationUser, IdentityRole>()
+        .AddEntityFrameworkStores<LibraryContext>()
+        .AddDefaultTokenProviders();
+services.Configure<IdentityOptions>(options =>
+{
+    options.ClaimsIdentity.UserNameClaimType = ClaimTypes.Name; // Change the default username claim type
+    options.ClaimsIdentity.UserIdClaimType = ClaimTypes.NameIdentifier; // Change the default user ID claim type
+    options.ClaimsIdentity.RoleClaimType = ClaimTypes.Role; // Change the default role claim type
+});
+
 services.AddStackExchangeRedisCache(options => { options.Configuration = configuration["RedisCacheUrl"]; });
 
 
@@ -85,11 +95,13 @@ var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
 app.UseMiddleware<GetIdRole>();
+
+app.MapControllers();
 
 app.Run();

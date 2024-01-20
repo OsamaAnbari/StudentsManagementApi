@@ -7,12 +7,14 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Students_Management_Api;
+using Students_Management_Api.Migrations;
 using Students_Management_Api.Models;
 using Students_Management_Api.Services;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Students_Management_Api.Controllers
 {
-    [Authorize(Roles = "1")]
+    //[Authorize(Roles = "1")]
     [Route("api/[controller]")]
     [ApiController]
     public class LecturesController : ControllerBase
@@ -56,19 +58,21 @@ namespace Students_Management_Api.Controllers
         // PUT: api/Lectures/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutLecture(int id, Lecture lecture)
+        public async Task<IActionResult> PutLecture(int id, LectureViewModel model)
         {
-            if (id != lecture.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(lecture).State = EntityState.Modified;
+            var lecture = await _context.Lecture.FindAsync(id);
+            _context.Lecture.Attach(lecture);
+            _context.Entry(lecture).CurrentValues.SetValues(model);
 
             var toRemove = _context.LectureStudent.Where(e => e.LecturesId == id).ToList();
             _context.LectureStudent.RemoveRange(toRemove);
 
-            foreach (var studentId in lecture.StudentIds)
+            if (!TeacherExists(model.TeacherID))
+            {
+                return BadRequest(new { error = "Teacher is not found" });
+            }
+
+            foreach (var studentId in model.StudentIds)
             {
                 if (StudentExists(studentId))
                 {
@@ -103,14 +107,21 @@ namespace Students_Management_Api.Controllers
         // POST: api/Lectures
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Lecture>> PostLecture(Lecture lecture)
+        public async Task<ActionResult<Lecture>> PostLecture(LectureViewModel model)
         {
             if (_context.Lecture == null)
             {
                 return Problem("Entity set 'LibraryContext.Lecture'  is null.");
             }
 
-            foreach (var studentId in lecture.StudentIds)
+            var lecture = new Lecture()
+            {
+                Title = model.Title,
+                Date = model.Date,
+                TeacherID = model.TeacherID
+            };
+
+            foreach (var studentId in model.StudentIds)
             {
                 if (StudentExists(studentId))
                 {
@@ -123,83 +134,11 @@ namespace Students_Management_Api.Controllers
                 }
             }
 
-            //lecture.Teacher = _context.Teacher.First(e => e.Id == 1);
-
             _context.Lecture.Add(lecture);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetLecture", new { id = lecture.Id }, lecture);
         }
-        /*
-        [HttpPost("addstudents/{id}")]
-        public async Task<ActionResult<Lecture>> AddStudents(int id, [FromBody] List<int> studentIds)
-        {
-            if (_context.Lecture == null)
-            {
-                return Problem("Entity set 'LibraryContext.Lecture'  is null.");
-            }
-
-            var lecture = await _context.Lecture.FindAsync(id);
-
-            if (lecture == null)
-            {
-                return NotFound();
-            }
-
-            foreach (var studentId in studentIds)
-            {
-                if (StudentExists(studentId))
-                {
-                    if (!_context.LectureStudent.Any(eab => eab.StudentsId == studentId && eab.LecturesId == id))
-                    {
-                        _context.LectureStudent.Add(
-                        new LectureStudent()
-                        {
-                            Lecture = lecture,
-                            StudentsId = studentId
-                        });
-                    }
-                }
-            }
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Caught exception: {ex.Message}");
-            }
-
-            return CreatedAtAction("GetLecture", lecture);
-        }
-
-        [HttpPost("removestudents/{id}")]
-        public async Task<ActionResult<Lecture>> RemoveStudents(int id, [FromBody] List<int> studentIds)
-        {
-            if (_context.Lecture == null)
-            {
-                return Problem("Entity set 'LibraryContext.Lecture'  is null.");
-            }
-
-            var lecture = await _context.Lecture.FindAsync(id);
-
-            if (lecture == null)
-            {
-                return NotFound();
-            }
-
-            var lectureStudents = _context.LectureStudent.Where(c => studentIds.Contains(c.StudentsId)).ToList();
-
-            foreach (var student in lectureStudents)
-            {
-                _context.LectureStudent.Remove(student);
-            }
-
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetLecture", lectureStudents);
-        }*/
 
         // DELETE: api/Lectures/5
         [HttpDelete("{id}")]
@@ -232,6 +171,10 @@ namespace Students_Management_Api.Controllers
         private bool LectureExistsInStudent(int lectureId, int StudentId)
         {
             return (_context.Student?.Any(e => e.Id == StudentId)).GetValueOrDefault();
+        }
+        private bool TeacherExists(int? id)
+        {
+            return (_context.Teacher?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

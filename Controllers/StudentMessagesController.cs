@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +12,7 @@ using Students_Management_Api.Models;
 
 namespace Students_Management_Api.Controllers
 {
-    [Authorize(Roles ="3")]
+    [Authorize(Roles = "Student")]
     [Route("api/[controller]")]
     [ApiController]
     public class StudentMessagesController : ControllerBase
@@ -23,118 +24,70 @@ namespace Students_Management_Api.Controllers
             _context = context;
         }
 
-        // GET: api/StudentMessagess
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<StudentMessages>>> GetStudentMessages()
-        {
-          if (_context.StudentMessages == null)
-          {
-              return NotFound();
-          }
-            return await _context.StudentMessages.ToListAsync();
-        }
-
-        // GET: api/StudentMessagess/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<StudentMessages>> GetStudentMessages(int id)
-        {
-          if (_context.StudentMessages == null)
-          {
-              return NotFound();
-          }
-            var StudentMessages = await _context.StudentMessages.FindAsync(id);
-
-            if (StudentMessages == null)
-            {
-                return NotFound();
-            }
-
-            return StudentMessages;
-        }
-
-        // PUT: api/StudentMessagess/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        /*[HttpPut("{id}")]
-        public async Task<IActionResult> PutStudentMessages(int id, StudentMessages StudentMessages)
-        {
-            if (id != StudentMessages.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(StudentMessages).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!StudentMessagesExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return NoContent();
-        }*/
-
-        // POST: api/StudentMessagess
+        // POST: api/StudentMessages
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<StudentMessages>> PostStudentMessages(StudentMessages StudentMessages)
+        public async Task<ActionResult<StudentMessages>> PostStudentMessage(StudentMessagesViewModel model)
         {
-          if (_context.StudentMessages == null)
-          {
-              return Problem("Entity set 'LibraryContext.StudentMessages'  is null.");
-          }
-
-            StudentMessages.SenderId = Convert.ToInt32(HttpContext.Items["userId"]);
-
-            if (StudentExists(StudentMessages.SenderId))
+            if (_context.StudentMessages == null)
             {
-                _context.StudentMessages.Add(StudentMessages);
+                return Problem("Entity set 'LibraryContext.StudentMessages'  is null.");
             }
-            else
+
+            string userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            int studentId = _context.Student.FirstOrDefault(e => e.UserId == userId).Id;
+            if (!StudentExists(studentId))
             {
-                return NotFound("The user is not found");
+                return BadRequest(new { error = "Teacher is not found" });
             }
+
+            var teacherMessage = new StudentMessages()
+            {
+                SenderId = studentId,
+                ReceiverId = model.ReceiverId,
+                Subject = model.Subject,
+                Status = model.Status,
+                Date = model.Date,
+                Body = model.Body
+            };
+
+            _context.StudentMessages.Add(teacherMessage);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetStudentMessages", new { id = StudentMessages.Id }, StudentMessages);
+            return Ok(new { id = teacherMessage.Id, teacherMessage });
         }
 
-        // DELETE: api/StudentMessagess/5
+        // DELETE: api/StudentMessages/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteStudentMessages(int id)
+        public async Task<IActionResult> DeleteStudentMessage(int id)
         {
             if (_context.StudentMessages == null)
             {
                 return NotFound();
             }
-            var StudentMessages = await _context.StudentMessages.FindAsync(id);
-            if (StudentMessages == null)
+            var teacherMessage = await _context.StudentMessages.FindAsync(id);
+            if (teacherMessage == null)
             {
                 return NotFound();
             }
 
-            _context.StudentMessages.Remove(StudentMessages);
+            _context.StudentMessages.Remove(teacherMessage);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
 
-        private bool StudentMessagesExists(int id)
+        private bool StudentMessageExists(int id)
         {
             return (_context.StudentMessages?.Any(e => e.Id == id)).GetValueOrDefault();
         }
         private bool StudentExists(int id)
         {
             return (_context.Student?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+        private bool TeacherExists(int id)
+        {
+            return (_context.Teacher?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

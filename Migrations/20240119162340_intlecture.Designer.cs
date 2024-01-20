@@ -11,8 +11,8 @@ using Students_Management_Api;
 namespace Students_Management_Api.Migrations
 {
     [DbContext(typeof(LibraryContext))]
-    [Migration("20240118190422_userIdentity")]
-    partial class userIdentity
+    [Migration("20240119162340_intlecture")]
+    partial class intlecture
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -150,7 +150,7 @@ namespace Students_Management_Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("Students_Management_Api.Models.AuthUser", b =>
+            modelBuilder.Entity("Students_Management_Api.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("varchar(255)");
@@ -220,7 +220,8 @@ namespace Students_Management_Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<int>("TeacherId")
+                    b.Property<int?>("TeacherID")
+                        .IsRequired()
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Time")
@@ -228,7 +229,7 @@ namespace Students_Management_Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TeacherId");
+                    b.HasIndex("TeacherID");
 
                     b.ToTable("Class");
                 });
@@ -309,8 +310,9 @@ namespace Students_Management_Api.Migrations
                     b.Property<string>("Tc")
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Year")
                         .HasColumnType("longtext");
@@ -364,12 +366,12 @@ namespace Students_Management_Api.Migrations
                     b.Property<int>("ReceivedId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ReceiversId")
+                    b.Property<int>("ReceiverId")
                         .HasColumnType("int");
 
-                    b.HasKey("ReceivedId", "ReceiversId");
+                    b.HasKey("ReceivedId", "ReceiverId");
 
-                    b.HasIndex("ReceiversId");
+                    b.HasIndex("ReceiverId");
 
                     b.ToTable("StudentTeacherMessage");
                 });
@@ -394,8 +396,12 @@ namespace Students_Management_Api.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime?>("birth")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
@@ -428,8 +434,12 @@ namespace Students_Management_Api.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<int?>("UserId")
-                        .HasColumnType("int");
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime?>("birth")
+                        .HasColumnType("datetime(6)");
 
                     b.HasKey("Id");
 
@@ -451,7 +461,7 @@ namespace Students_Management_Api.Migrations
                     b.Property<DateTime?>("Date")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<int?>("SenderId")
+                    b.Property<int>("SenderId")
                         .HasColumnType("int");
 
                     b.Property<bool?>("Status")
@@ -467,28 +477,6 @@ namespace Students_Management_Api.Migrations
                     b.ToTable("TeacherMessage");
                 });
 
-            modelBuilder.Entity("Students_Management_Api.Models.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    b.Property<string>("Password")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("Role")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("User");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -500,7 +488,7 @@ namespace Students_Management_Api.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("Students_Management_Api.Models.AuthUser", null)
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -509,7 +497,7 @@ namespace Students_Management_Api.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("Students_Management_Api.Models.AuthUser", null)
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -524,7 +512,7 @@ namespace Students_Management_Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Students_Management_Api.Models.AuthUser", null)
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -533,7 +521,7 @@ namespace Students_Management_Api.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("Students_Management_Api.Models.AuthUser", null)
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -544,7 +532,7 @@ namespace Students_Management_Api.Migrations
                 {
                     b.HasOne("Students_Management_Api.Models.Teacher", "Teacher")
                         .WithMany("Classes")
-                        .HasForeignKey("TeacherId")
+                        .HasForeignKey("TeacherID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -600,11 +588,13 @@ namespace Students_Management_Api.Migrations
 
             modelBuilder.Entity("Students_Management_Api.Models.Student", b =>
                 {
-                    b.HasOne("Students_Management_Api.Models.User", "User")
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", "ApplicationUser")
                         .WithOne()
-                        .HasForeignKey("Students_Management_Api.Models.Student", "UserId");
+                        .HasForeignKey("Students_Management_Api.Models.Student", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("ApplicationUser");
                 });
 
             modelBuilder.Entity("Students_Management_Api.Models.StudentMessages", b =>
@@ -634,40 +624,46 @@ namespace Students_Management_Api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Students_Management_Api.Models.Student", "Receivers")
+                    b.HasOne("Students_Management_Api.Models.Student", "Receiver")
                         .WithMany()
-                        .HasForeignKey("ReceiversId")
+                        .HasForeignKey("ReceiverId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Received");
 
-                    b.Navigation("Receivers");
+                    b.Navigation("Receiver");
                 });
 
             modelBuilder.Entity("Students_Management_Api.Models.Supervisor", b =>
                 {
-                    b.HasOne("Students_Management_Api.Models.User", "User")
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", "ApplicationUser")
                         .WithOne()
-                        .HasForeignKey("Students_Management_Api.Models.Supervisor", "UserId");
+                        .HasForeignKey("Students_Management_Api.Models.Supervisor", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("ApplicationUser");
                 });
 
             modelBuilder.Entity("Students_Management_Api.Models.Teacher", b =>
                 {
-                    b.HasOne("Students_Management_Api.Models.User", "User")
+                    b.HasOne("Students_Management_Api.Models.ApplicationUser", "ApplicationUser")
                         .WithOne()
-                        .HasForeignKey("Students_Management_Api.Models.Teacher", "UserId");
+                        .HasForeignKey("Students_Management_Api.Models.Teacher", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("ApplicationUser");
                 });
 
             modelBuilder.Entity("Students_Management_Api.Models.TeacherMessage", b =>
                 {
                     b.HasOne("Students_Management_Api.Models.Teacher", "Sender")
                         .WithMany("Sents")
-                        .HasForeignKey("SenderId");
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Sender");
                 });

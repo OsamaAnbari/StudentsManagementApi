@@ -7,11 +7,14 @@ using MySql.EntityFrameworkCore.Metadata;
 namespace Students_Management_Api.Migrations
 {
     /// <inheritdoc />
-    public partial class userIdentity : Migration
+    public partial class initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("MySQL:Charset", "utf8mb4");
+
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -164,6 +167,34 @@ namespace Students_Management_Api.Migrations
                 })
                 .Annotation("MySQL:Charset", "utf8mb4");
 
+            migrationBuilder.CreateTable(
+                name: "Student",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("MySQL:ValueGenerationStrategy", MySQLValueGenerationStrategy.IdentityColumn),
+                    UserId = table.Column<string>(type: "varchar(255)", nullable: false),
+                    Firstname = table.Column<string>(type: "longtext", nullable: true),
+                    Surname = table.Column<string>(type: "longtext", nullable: true),
+                    birth = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    Phone = table.Column<string>(type: "longtext", nullable: true),
+                    Tc = table.Column<string>(type: "longtext", nullable: true),
+                    Faculty = table.Column<string>(type: "longtext", nullable: true),
+                    Department = table.Column<string>(type: "longtext", nullable: true),
+                    Year = table.Column<string>(type: "longtext", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Student", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Student_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                })
+                .Annotation("MySQL:Charset", "utf8mb4");
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -200,6 +231,12 @@ namespace Students_Management_Api.Migrations
                 table: "AspNetUsers",
                 column: "NormalizedUserName",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Student_UserId",
+                table: "Student",
+                column: "UserId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -219,6 +256,9 @@ namespace Students_Management_Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "AspNetUserTokens");
+
+            migrationBuilder.DropTable(
+                name: "Student");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
