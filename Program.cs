@@ -12,7 +12,7 @@ using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Google;
-
+using Students_Management_Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +50,8 @@ services.AddSwaggerGen(option =>
 
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
+
+services.AddScoped<IStudentService, StudentService>();
 
 services.AddAuthentication(options =>
 {
