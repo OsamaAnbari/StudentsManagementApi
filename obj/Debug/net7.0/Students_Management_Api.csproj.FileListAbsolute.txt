@@ -268,3 +268,9 @@ D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.AspNetCor
 D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
 D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.Extensions.Identity.Core.dll
 D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.Extensions.Identity.Stores.dll
+D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.AspNetCore.Authentication.Google.dll
+D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Castle.Core.dll
+D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.EntityFrameworkCore.InMemory.dll
+D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.Extensions.DependencyInjection.dll
+D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Microsoft.Extensions.Logging.dll
+D:\Projects\asp.net\Students_Management_Api\bin\Debug\net7.0\Moq.dll

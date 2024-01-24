@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 using Students_Management_Api.Models;
 using Microsoft.AspNetCore.Identity;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -54,18 +56,47 @@ services.AddAuthentication(options =>
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
+    options.DefaultChallengeScheme = GoogleDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer(options =>
     {
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["key"])),
-        ValidateIssuer = false,
-        ValidateAudience = false
-    };
+        options.RequireHttpsMetadata = false;
+        options.SaveToken = true;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(configuration["key"])),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    })
+    .AddCookie()
+    .AddGoogle(options =>
+    {
+        options.ClientId = "186763096110-n53tnjdnusqq9eoe7ukcnnjmu4n02680.apps.googleusercontent.com";
+        options.ClientSecret = "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";
+    });
+
+services.AddCors(options =>
+{
+    options.AddPolicy("AllowAnyOrigin",
+        builder =>
+        {
+            builder.AllowAnyOrigin()
+                   .AllowAnyHeader()
+                   .AllowAnyMethod();
+        });
 });
+/*services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        .AddCookie(options =>
+        {
+            options.Cookie.IsEssential = true;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.None;
+            options.ExpireTimeSpan = TimeSpan.FromMinutes(60);
+        });*/
+
 services.AddAuthorization();
 
 services.AddControllers()
@@ -96,11 +127,12 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 //app.UseHttpsRedirection();
+app.UseCors("AllowAnyOrigin");
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.UseMiddleware<GetIdRole>();
+//app.UseMiddleware<GetIdRole>();
 
 app.MapControllers();
 

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Students_Management_Api;
 using Students_Management_Api.Migrations;
 using Students_Management_Api.Models;
@@ -28,13 +29,33 @@ namespace Students_Management_Api.Controllers
 
         // GET: api/Lectures
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Lecture>>> GetLecture()
+        public async Task<ActionResult<IEnumerable<LectureViewModel>>> GetLecture()
         {
             if (_context.Lecture == null)
             {
                 return NotFound();
             }
-            return await _context.Lecture.ToListAsync();
+
+            var lectures = await _context.Lecture.Include(e => e.Students).ToListAsync();
+            List<LectureViewModel> model = new List<LectureViewModel>();
+
+            foreach( var lecture in lectures )
+            {
+                /*List<int> studentIds = new List<int>();
+                foreach( var student in lecture.Students)
+                {
+                    studentIds.Add(student.Id);
+                }*/
+                model.Add(new LectureViewModel()
+                {
+                    Id = lecture.Id,
+                    Title = lecture.Title,
+                    Date = lecture.Date,
+                    TeacherID = lecture.TeacherID,
+                    StudentIds = lecture.Students.Select(e => e.Id).ToList()
+                });
+            }
+            return Ok(JsonConvert.SerializeObject(model, Formatting.Indented));
         }
 
         // GET: api/Lectures/5

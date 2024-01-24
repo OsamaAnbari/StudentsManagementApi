@@ -1,54 +1,55 @@
-﻿/*using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Org.BouncyCastle.Bcpg.Sig;
+using System.Security.Cryptography;
 using Students_Management_Api.Models;
+using Microsoft.Extensions.Caching.Distributed;
+using Newtonsoft.Json;
+using System.Text;
+using Microsoft.Extensions.Logging.Console;
+using System.Security.Claims;
 
 namespace Students_Management_Api.Controllers
 {
-    [Authorize(Roles = "2")]
+    [Authorize(Roles = "Teacher")]
     [Route("api/Teachers/My")]
     [ApiController]
     public class TeacherMy : ControllerBase
     {
         private readonly LibraryContext _context;
+        IDistributedCache _cache;
+        ILogger _logger;
 
-        public TeacherMy(LibraryContext context)
+        public TeacherMy(LibraryContext context, IDistributedCache cache, ILogger<TeacherMy> logger)
         {
             _context = context;
+            _cache = cache;
+            _logger = logger;
         }
 
         [HttpGet("infos")]
         public async Task<ActionResult<Teacher>> GetMyInfos()
         {
-            int _id = Convert.ToInt32(HttpContext.Items["userId"]);
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var teacher = _context.Teacher.FirstOrDefault(e => e.UserId == userId);
 
-            if (_context.Teacher == null)
-            {
-                return NotFound();
-            }
-
-            var teacher = await _context.Teacher.FindAsync(_id);
 
             if (teacher == null)
             {
                 return NotFound();
             }
 
-            return teacher;
+            return Ok(teacher);
         }
 
         [HttpGet("lectures")]
         public async Task<ActionResult<List<Lecture>>> GetMyLectures()
         {
-            int _id = Convert.ToInt32(HttpContext.Items["userId"]);
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var teacher = _context.Teacher.Include(e => e.Lectures).FirstOrDefault(e => e.UserId == userId);
 
-            if (_context.Teacher == null)
-            {
-                return NotFound();
-            }
-
-            var teacher = await _context.Teacher.Include(e => e.Lectures).FirstAsync(e => e.Id == _id);
 
             if (teacher == null)
             {
@@ -58,17 +59,27 @@ namespace Students_Management_Api.Controllers
             return teacher.Lectures;
         }
 
-        [HttpGet("sents")]
-        public async Task<ActionResult<List<TeacherMessage>>> GetMySents()
+        [HttpGet("class")]
+        public async Task<ActionResult<List<Class>>> GetMyClasses()
         {
-            int _id = Convert.ToInt32(HttpContext.Items["userId"]);
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var teacher = _context.Teacher.Include(e => e.Classes).FirstOrDefault(e => e.UserId == userId);
 
-            if (_context.Teacher == null)
+
+            if (teacher == null)
             {
                 return NotFound();
             }
 
-            var teacher = await _context.Teacher.Include(e => e.Sents).FirstAsync(e => e.Id == _id);
+            return teacher.Classes;
+        }
+
+        [HttpGet("sents")]
+        public async Task<ActionResult<List<TeacherMessage>>> GetMySents()
+        {
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var teacher = _context.Teacher.Include(e => e.Sents).FirstOrDefault(e => e.UserId == userId);
+
 
             if (teacher == null)
             {
@@ -81,14 +92,9 @@ namespace Students_Management_Api.Controllers
         [HttpGet("received")]
         public async Task<ActionResult<List<StudentMessages>>> GetMyReceived()
         {
-            int _id = Convert.ToInt32(HttpContext.Items["userId"]);
+            var userId = HttpContext.User.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var teacher = _context.Teacher.Include(e => e.Received).FirstOrDefault(e => e.UserId == userId);
 
-            if (_context.Teacher == null)
-            {
-                return NotFound();
-            }
-
-            var teacher = await _context.Teacher.Include(e => e.Received).FirstAsync(e => e.Id == _id);
 
             if (teacher == null)
             {
@@ -99,4 +105,3 @@ namespace Students_Management_Api.Controllers
         }
     }
 }
-*/

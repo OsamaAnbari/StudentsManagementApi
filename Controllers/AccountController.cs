@@ -45,9 +45,10 @@ namespace Students_Management_Api.Controllers
                 var roles = await _userManager.GetRolesAsync(user);
 
                 AuthService userService = new AuthService(_configuration);
-                var token = userService.GenerateJwtToken(roles.FirstOrDefault(), user.Id);
+                var token = userService.GenerateJwtToken(roles, user.Id);
 
                 _logger.LogInformation("Admin Logged In");
+                //return Ok(new { message = $"{model.Username} User is Logged in" });
                 return Ok(new { token });
             }
 

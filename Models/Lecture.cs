@@ -15,6 +15,7 @@ namespace Students_Management_Api.Models
     }
     public class LectureViewModel
     {
+        [JsonIgnore] public int Id { get; set; }
         public string? Title { get; set; }
         public DateTime Date { get; set; }
         public int? TeacherID { get; set; }
