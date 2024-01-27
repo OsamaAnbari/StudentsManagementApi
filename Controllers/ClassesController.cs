@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Students_Management_Api;
-using Students_Management_Api.Migrations;
 using Students_Management_Api.Models;
 using Students_Management_Api.Services;
 using static System.Runtime.InteropServices.JavaScript.JSType;

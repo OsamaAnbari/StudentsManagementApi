@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Students_Management_Api.Models;
@@ -37,7 +36,7 @@ namespace Students_Management_Api.Controllers
 
             if (result.Succeeded)
             {
-                return Ok(new {message = "$\"Role '{Role.RoleName}' created successfully, its ID is {role.Id}\"" });
+                return Ok(new { message = $"\"Role '{Role.RoleName}' created successfully, its ID is {role.Id}\"" });
             }
 
             return BadRequest(new { message = $"Failed to create role: {string.Join(", ", result.Errors)}" });

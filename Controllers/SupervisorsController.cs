@@ -1,16 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
+﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using NuGet.DependencyResolver;
-using NuGet.Protocol.Plugins;
-using Students_Management_Api;
 using Students_Management_Api.Models;
+using Students_Management_Api.Services.SupervisorServices;
 
 namespace Students_Management_Api.Controllers
 {
@@ -19,156 +10,77 @@ namespace Students_Management_Api.Controllers
     [ApiController]
     public class SupervisorsController : ControllerBase
     {
-        private readonly LibraryContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly ISupervisorService _supervisorService;
+        private readonly IMapper _mapper;
 
-        public SupervisorsController(
-            LibraryContext context,
-            UserManager<ApplicationUser> userManager
-            )
+        public SupervisorsController(ISupervisorService supervisorService, IMapper mapper)
         {
-            _context = context;
-            _userManager = userManager;
+            _supervisorService = supervisorService;
+            _mapper = mapper;
         }
 
-        // GET: api/Supervisors
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Supervisor>>> GetSupervisor()
+        public ActionResult<IEnumerable<Supervisor>> GetAllSupervisors()
         {
-            if (_context.Supervisor == null)
+            var supervisors = _supervisorService.GetAllSupervisors();
+
+            if (supervisors == null)
             {
                 return NotFound();
             }
-            return await _context.Supervisor.ToListAsync();
+
+            return Ok(supervisors);
         }
 
-        // GET: api/Supervisors/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Supervisor>> GetSupervisor(int id)
+        public ActionResult<Supervisor> GetSupervisorById(int id)
         {
-            if (_context.Supervisor == null)
-            {
-                return NotFound();
-            }
-            var Supervisor = await _context.Supervisor.FindAsync(id);
+            var supervisor = _supervisorService.GetSupervisorById(id);
 
-            if (Supervisor == null)
+            if (supervisor == null)
             {
                 return NotFound();
             }
 
-            return Supervisor;
+            return Ok(supervisor);
         }
 
-        // PUT: api/Supervisors/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutSupervisor(int id, Supervisor Supervisor)
+        [HttpPost]
+        public async Task<IActionResult> AddSupervisor([FromBody] SupervisorViewModel model)
         {
-            if (id != Supervisor.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Supervisor.Attach(Supervisor);
-            _context.Entry(Supervisor).Property(x => x.Firstname).IsModified = true;
-            _context.Entry(Supervisor).Property(x => x.Surname).IsModified = true;
-            _context.Entry(Supervisor).Property(x => x.Phone).IsModified = true;
-            _context.Entry(Supervisor).Property(x => x.Tc).IsModified = true;
-            _context.Entry(Supervisor).Property(x => x.birth).IsModified = true;
-
             try
             {
-                await _context.SaveChangesAsync();
+                var supervisor = _mapper.Map<Supervisor>(model);
+                await _supervisorService.AddSupervisor(supervisor, model.Email);
+                return CreatedAtAction(nameof(GetSupervisorById), new { id = supervisor.Id }, supervisor);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (Exception ex)
             {
-                if (!SupervisorExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest(ex.Message);
             }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateSupervisor(int id, [FromBody] SupervisorViewModel model)
+        {
+            var supervisor = _mapper.Map<Supervisor>(model);
+            await _supervisorService.UpdateSupervisor(id, supervisor);
 
             return NoContent();
         }
 
-        // POST: api/Supervisors
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Supervisor>> PostSupervisor(SupervisorViewModel model)
-        {
-            if (_context.Supervisor == null)
-            {
-                return Problem("Entity set 'LibraryContext.Supervisor'  is null.");
-            }
-            var user = new ApplicationUser() { UserName = model.Tc, Email = model.Email };
-            var result = await _userManager.CreateAsync(user, $"Aa.{model.Tc}");
-
-            if (result.Succeeded)
-            {
-                var addToRoleResult = await _userManager.AddToRoleAsync(user, "Supervisor");
-
-                if (addToRoleResult.Succeeded)
-                {
-                    var Supervisor = new Supervisor()
-                    {
-                        UserId = user.Id,
-                        Firstname = model.Firstname,
-                        Surname = model.Surname,
-                        birth = model.birth,
-                        Phone = model.Phone,
-                        Tc = model.Tc,
-                    };
-
-                    _context.Supervisor.Add(Supervisor);
-                    await _context.SaveChangesAsync();
-
-                    return Ok($"User '{model.Tc}' created successfully and assigned to the role 'Supervisor'");
-                }
-                else
-                {
-                    await _userManager.DeleteAsync(user);
-                    return BadRequest($"Failed to assign the user to the role: {string.Join(", ", addToRoleResult.Errors)}");
-                }
-            }
-            return BadRequest(result.Errors);
-        }
-
-        // DELETE: api/Supervisors/5
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSupervisor(int id)
+        public IActionResult DeleteSupervisor(int id)
         {
-            if (_context.Supervisor == null)
+            var existingSupervisor = _supervisorService.GetSupervisorById(id);
+
+            if (existingSupervisor == null)
             {
                 return NotFound();
             }
-            var Supervisor = await _context.Supervisor.FindAsync(id);
-            if (Supervisor == null)
-            {
-                return NotFound();
-            }
 
-            var user = await _userManager.FindByIdAsync(Supervisor.UserId);
-            if (user == null)
-            {
-                return NotFound("User is not found");
-            }
-
-            _context.Supervisor.Remove(Supervisor);
-            await _userManager.DeleteAsync(user);
-
-            await _context.SaveChangesAsync();
-
+            _supervisorService.DeleteSupervisor(existingSupervisor);
             return NoContent();
-        }
-
-        private bool SupervisorExists(int id)
-        {
-            return (_context.Supervisor?.Any(e => e.Id == id)).GetValueOrDefault();
         }
     }
 }

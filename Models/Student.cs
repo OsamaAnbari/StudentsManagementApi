@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Text.Json.Serialization;
 
 namespace Students_Management_Api.Models
 {
@@ -9,13 +7,13 @@ namespace Students_Management_Api.Models
     {
         public int Id { get; set; }
         [ForeignKey("IdentityUser")]
-        public string UserId { get; set; }
+        public string? UserId { get; set; }
         public ApplicationUser ApplicationUser { get; set; }
         public string Firstname { get; set; }
         public string? Surname { get; set; }
-        public DateTime? birth { get; set; }
+        public DateTime? Birth { get; set; }
         public string? Phone { get; set; }
-        public string Tc { get; set; }
+        public string IdentityNo { get; set; }
         public string? Faculty { get; set; }
         public string? Department { get; set; }
         public string? Year { get; set; }
@@ -37,13 +35,13 @@ namespace Students_Management_Api.Models
 
         [DataType(DataType.Date)]
         [DisplayFormat(DataFormatString = "{0:yyyy-MM-dd}", ApplyFormatInEditMode = true)]
-        public DateTime? birth { get; set; }
+        public DateTime? Birth { get; set; }
 
         [RegularExpression("^[0-9]*$", ErrorMessage = "Only digits are allowed")]
         public string? Phone { get; set; }
 
         [RegularExpression("^[0-9]*$", ErrorMessage = "Only digits are allowed")]
-        public string Tc { get; set; }
+        public string IdentityNo { get; set; }
 
         [RegularExpression("^[a-zA-Z]*$", ErrorMessage = "Only letters are allowed")]
         public string? Faculty { get; set; }
@@ -52,7 +50,7 @@ namespace Students_Management_Api.Models
         public string? Department { get; set; }
 
         public string? Year { get; set; }
-        
+
         [EmailAddress(ErrorMessage = "Invalid Email Address")]
         public string Email { get; set; }
     }

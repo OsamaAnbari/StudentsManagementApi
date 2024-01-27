@@ -1,11 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using MySql.EntityFrameworkCore.Extensions;
-using System.Collections.Generic;
-using System.Reflection.Emit;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Students_Management_Api.Models;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
 
 namespace Students_Management_Api
 {
@@ -39,7 +34,7 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Firstname);
                 entity.Property(entity => entity.Surname);
                 entity.Property(entity => entity.Phone);
-                entity.Property(entity => entity.Tc);
+                entity.Property(entity => entity.IdentityNo);
                 entity.Property(entity => entity.Study);
                 entity.HasOne(e => e.ApplicationUser).WithOne().HasForeignKey<Teacher>(e => e.UserId);
             });
@@ -50,7 +45,7 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Firstname);
                 entity.Property(entity => entity.Surname);
                 entity.Property(entity => entity.Phone);
-                entity.Property(entity => entity.Tc);
+                entity.Property(entity => entity.IdentityNo);
                 entity.HasOne(e => e.ApplicationUser).WithOne().HasForeignKey<Supervisor>(e => e.UserId);
             });
 
@@ -60,10 +55,11 @@ namespace Students_Management_Api
                 entity.Property(entity => entity.Firstname).IsRequired(false);
                 entity.Property(entity => entity.Surname).IsRequired(false);
                 entity.Property(entity => entity.Phone).IsRequired(false);
-                entity.Property(entity => entity.Tc).IsRequired(false);
+                entity.Property(entity => entity.IdentityNo).IsRequired(false);
                 entity.Property(entity => entity.Faculty).IsRequired(false);
                 entity.Property(entity => entity.Department).IsRequired(false);
                 entity.Property(entity => entity.Year).IsRequired(false);
+                //entity.Property(entity => entity.Birth).IsRequired(false);
                 entity.HasOne(e => e.ApplicationUser).WithOne().HasForeignKey<Student>(e => e.UserId);
             });
 

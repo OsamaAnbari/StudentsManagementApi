@@ -1,18 +1,18 @@
-using Students_Management_Api;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Students_Management_Api.Middlewares;
-using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
+using Students_Management_Api;
 using Students_Management_Api.Models;
-using Microsoft.AspNetCore.Identity;
+using Students_Management_Api.Repositories;
+using Students_Management_Api.Services.StudentServices;
+using Students_Management_Api.Services.SupervisorServices;
+using Students_Management_Api.Services.TeacherServices;
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.Google;
-using Students_Management_Api.Services;
+using System.Text;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,7 +51,14 @@ services.AddSwaggerGen(option =>
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 
+services.AddScoped<IRepository<Student>, Repository<Student>>();
 services.AddScoped<IStudentService, StudentService>();
+services.AddScoped<IRepository<Teacher>, Repository<Teacher>>();
+services.AddScoped<ISupervisorService, SupervisorService>();
+services.AddScoped<IRepository<Supervisor>, Repository<Supervisor>>();
+services.AddScoped<ITeacherService, TeacherService>();
+
+services.AddAutoMapper(typeof(Program).Assembly);
 
 services.AddAuthentication(options =>
 {
@@ -107,7 +114,7 @@ services.AddControllers()
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
     });
 
-services.AddDbContext<LibraryContext>(x => x.UseMySQL(configuration["ConnectionStrings:sql"]));
+services.AddDbContext<LibraryContext>(x => x.UseSqlServer(configuration["ConnectionStrings:sql"]));
 services.AddIdentity<ApplicationUser, IdentityRole>()
         .AddEntityFrameworkStores<LibraryContext>()
         .AddDefaultTokenProviders();
